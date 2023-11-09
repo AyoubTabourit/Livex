@@ -47,6 +47,9 @@ dependencies:
   shared_preferences: ^2.2.1
   get: ^4.3.8
   font_awesome_flutter: ^10.4.0
+  share_plus: ^7.1.0
+  get_storage: ^2.1.1
+
 
 dev_dependencies:
   flutter_test:

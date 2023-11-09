@@ -29,8 +29,9 @@ class _SingUpScreenState extends State<SingUpScreen> {
   TextEditingController ee = TextEditingController();
 
 
+
   Future register() async{
-    var url ="http://192.168.1.4:82/api_store/register.php";
+    var url ="http://20.20.1.245:82/api_store/register.php";
     final response = await http.post(Uri.parse(url),body:{
       'user_name' : usertextcontroller.text,
       'user_email': emailtextcontroller.text,
@@ -45,7 +46,7 @@ class _SingUpScreenState extends State<SingUpScreen> {
     var data =json.decode(response.body);
     if(data=="error"){
       Fluttertoast.showToast(
-          msg: "this user existe",
+          msg: "Ce compte déja éxiste",
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.CENTER,
           timeInSecForIosWeb: 1,
@@ -55,7 +56,7 @@ class _SingUpScreenState extends State<SingUpScreen> {
       );
     }else{
       Fluttertoast.showToast(
-          msg: "Succes",
+          msg: "Votre compte à été crée avec succer",
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.CENTER,
           timeInSecForIosWeb: 1,
@@ -63,9 +64,35 @@ class _SingUpScreenState extends State<SingUpScreen> {
           textColor: Colors.white,
           fontSize: 16.0
       );
-      Navigator.push(context, MaterialPageRoute(builder: (context) => singinscreen()));
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => singinscreen()));
     }
   }
+
+  Future verifier()async{
+  var url ="http://20.20.1.245:82/api_store/user/validate_email.php";
+  final response = await http.post(Uri.parse(url),body:{
+
+  'user_email': emailtextcontroller.text,
+
+
+  });
+  var data =json.decode(response.body);
+  if(data=="kyn"){
+    Fluttertoast.showToast(
+        msg: "Veuillez vous saisir un autre Email",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0
+    );
+
+  }
+  else{
+  register();
+  }
+}
 
 
 
@@ -78,7 +105,7 @@ class _SingUpScreenState extends State<SingUpScreen> {
         elevation: 0,
         title:const Text("Création de compte",
         style: TextStyle(fontSize: 24,fontWeight: FontWeight.bold),
-        )
+        ),
       ),
       body: Container(
 
@@ -98,22 +125,49 @@ class _SingUpScreenState extends State<SingUpScreen> {
               const SizedBox(
                 height: 20,
               ),
-              reusableTextField("Votre nom d'utilisateur",Icons.person_outline, false, usertextcontroller),
+              reusableTextField("Votre nom d'utilisateur*",Icons.person_outline, false, usertextcontroller,),
+              const SizedBox(
+                height: 20,
+              ),TextField(
+              controller: emailtextcontroller,
+              cursorColor: Colors.white,
+              style: TextStyle(color: Colors.white.withOpacity(0.9)),
+              decoration: InputDecoration(prefixIcon:Icon(Icons.numbers_outlined, color: Colors.white70,) ,
+                labelText: "Votre adresse électronique*",
+                labelStyle: TextStyle(color: Colors.white.withOpacity(0.9)),
+                filled: true,
+                floatingLabelBehavior: FloatingLabelBehavior.never,
+                fillColor: Colors.white.withOpacity(0.3),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(30.0),borderSide: const BorderSide(width: 0,style: BorderStyle.none)),
+              ),
+              keyboardType: TextInputType.emailAddress
+
+          ),
               const SizedBox(
                 height: 20,
               ),
-              reusableTextField("Votre adresse électronique", Icons.email_outlined, false, emailtextcontroller),
-              const SizedBox(
-                height: 20,
-              ),
-              reusableTextField("Votre mot de passe", Icons.lock_outline, true, passwordtextcontroller,),
+              reusableTextField("Votre mot de passe*", Icons.lock_outline, true, passwordtextcontroller,),
 
               const SizedBox(
                 height: 20,
               ),
 
-              reusableTextField("Votre numéro de téléphone", Icons.numbers_outlined, false, telcontroller,),
+              //reusableTextField("Votre numéro de téléphone*", Icons.numbers_outlined, false, telcontroller,),
+TextField(
+  controller: telcontroller,
+  cursorColor: Colors.white,
+  style: TextStyle(color: Colors.white.withOpacity(0.9)),
+  decoration: InputDecoration(prefixIcon:Icon(Icons.numbers_outlined, color: Colors.white70,) ,
+    labelText: "Votre numéro de téléphone*",
+    labelStyle: TextStyle(color: Colors.white.withOpacity(0.9)),
+    filled: true,
+    floatingLabelBehavior: FloatingLabelBehavior.never,
+    fillColor: Colors.white.withOpacity(0.3),
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(30.0),borderSide: const BorderSide(width: 0,style: BorderStyle.none)),
+  ),
+  keyboardType: TextInputType.number
 
+),
               const SizedBox(
                 height: 20,
               ),
@@ -133,7 +187,7 @@ class _SingUpScreenState extends State<SingUpScreen> {
                     fontSize: 16.0
                 );
               }else{
-                register();
+                verifier();
               }
 
 

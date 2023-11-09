@@ -2,70 +2,74 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'package:get/get.dart';
+import 'package:livex/screen_auth/edit_command.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-var finaluser;
+import 'package:livex/screen_auth/NavBar.dart';
 
-class test extends StatefulWidget {
-  const test({Key? key});
+var finalEmail;
+class afficher_detaille_retour extends StatefulWidget {
+  const afficher_detaille_retour({Key? key});
 
   @override
-  State<test> createState() => _TestState();
+  State<afficher_detaille_retour> createState() => _TestState();
 }
 
-class _TestState extends State<test> {
+class _TestState extends State<afficher_detaille_retour> {
   List<Map<String, dynamic>> jsD = [];
-
+  // String? userId;
+  String? id_livre;
+  int finaluser = 0;
   @override
   void initState() {
     super.initState();
-    getuserdata().whenComplete(() async {
-      fetchData();
+    getvalidationdata().whenComplete(() {
+      fetcheid();
+      fetchData(); // Call fetchData here
     });
-    fetchidName();
   }
 
-  Future getuserdata() async {
+
+  Future getvalidationdata() async {
     final SharedPreferences sharedpreferences =
     await SharedPreferences.getInstance();
-    var obtainedEmail = sharedpreferences.getString('email');
+    var obtainedEmail = sharedpreferences.getString('share_email');
     setState(() {
-      finaluser = obtainedEmail;
+      finalEmail = obtainedEmail;
     });
-    print(finaluser);
+    print(finalEmail);
   }
 
-  Future<void> fetchidName() async {
-    var url = "http://127.0.0.1:82/api_store/user_id.php";
-    final response = await http.post(
-      Uri.parse(url),
-      body: {
-        'user_email': finaluser,
-      },
-    );
+  // List<Map<String, dynamic>> userData = [];
 
+
+  Future<void> fetcheid() async {
+    final response = await http.post(
+        Uri.parse('http://20.20.1.245:82/api_store/user_id.php'),
+        body: {'user_email': finalEmail});
     if (response.statusCode == 200) {
       setState(() {
-        finaluser = response.body;
+        String responseBody =response.body.toString();
+        finaluser =int.parse(responseBody);
       });
     } else {
       setState(() {
-        finaluser = "No records found";
-        print(finaluser);
+        finaluser = int.parse("No records found");
       });
     }
   }
-
   Future<void> fetchData() async {
-    final response = await http.post(Uri.parse('http://20.20.1.245:82/api_store/commande.php'), body: {
-      'user_id': finaluser
+    final response = await http.post(Uri.parse('http://20.20.1.245:82/api_store/aff_detaille_retour.php'), body: {
+      'user_email': finalEmail
     });
     if (response.statusCode == 200) {
       final List<dynamic> responseData = json.decode(response.body);
       setState(() {
         jsD = List<Map<String, dynamic>>.from(responseData);
+
       });
     } else {
       print('Erreur de requête: ${response.statusCode}');
@@ -75,6 +79,10 @@ class _TestState extends State<test> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: NavBare(),
+      appBar: AppBar(
+        title: Text('Détails colis'),
+      ),
       body: Container(
         child: Stack(
           children: [
@@ -103,6 +111,11 @@ class _TestState extends State<test> {
     );
   }
 
+
+
+
+
+
   void _showAddOptionDialog(BuildContext context, int index) {
     showDialog(
       context: context,
@@ -120,8 +133,9 @@ class _TestState extends State<test> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+
                 Text(
-                  'Détails Colis',
+                  'Détails Retour',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -149,8 +163,8 @@ class _TestState extends State<test> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     ElevatedButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
+                      onPressed: ()  {
+                        Navigator.pop(context);
                       },
                       child: Text(
                         'Annuler',
@@ -158,6 +172,7 @@ class _TestState extends State<test> {
                       ),
                     ),
                     SizedBox(width: 10),
+
                   ],
                 ),
               ],
@@ -171,6 +186,6 @@ class _TestState extends State<test> {
 
 void main() {
   runApp(MaterialApp(
-    home: test(),
+    home: afficher_detaille_retour(),
   ));
 }

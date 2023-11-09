@@ -1,6 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart'as http;
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:livex/screen_auth/afficher_detaille_reclamation.dart';
+import 'package:livex/screen_auth/affichier_detaille_retour.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:livex/reusable_widgets/reusable_widget.dart';
 import 'package:livex/screen_auth/NavBar.dart';
@@ -12,8 +16,10 @@ import 'package:livex/screen_auth/mon_compte.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-const LatLng currentLoc = LatLng(33.60978755824398, -7.494870946024597);
+import 'afficher_detaille_colislivrer.dart';
 
+const LatLng currentLoc = LatLng(33.60978755824398, -7.494870946024597);
+var finalEmail;
 void main() {
   runApp(const HomeScreen());
 }
@@ -40,30 +46,171 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-
-
-
+class _MyHomePageState extends State<MyHomePage> {  int finaluser = 0;
   TextEditingController txtrevenuNet = TextEditingController();
   TextEditingController txtcolieLivrais = TextEditingController();
-  TextEditingController txtretour = TextEditingController();
+TextEditingController txtretour = TextEditingController(text: '0');
   TextEditingController txtreclamation = TextEditingController();
+
   final Completer<GoogleMapController> _controller = Completer();
   Map<String, Marker> _markers = {};
   static const CameraPosition _intialPosition = CameraPosition(
     target: LatLng(33.60978755824398, -7.494870946024597),
-    zoom: 14,
+    zoom: 13,
+  );
+@override
+void initState() {
+  super.initState();
+  getvalidationdata().whenComplete(() {
+    fetcheid();
+    fetchCOLISData(); // Call fetchData here
+    fetchRetourData();
+    fetchReclamationData();
+  });
+}
+
+Future getvalidationdata() async {
+    final SharedPreferences sharedpreferences =
+    await SharedPreferences.getInstance();
+    var obtainedEmail = sharedpreferences.getString('share_email');
+    setState(() {
+      finalEmail = obtainedEmail;
+    });
+    print(finalEmail);
+  }
+
+  // List<Map<String, dynamic>> userData = [];
+
+
+  Future<void> fetcheid() async {
+    final response = await http.post(
+        Uri.parse('http://20.20.1.245:82/api_store/user_id.php'),
+        body: {'user_email': finalEmail});
+    if (response.statusCode == 200) {
+      setState(() {
+        String responseBody = response.body.toString();
+       finaluser = int.parse(responseBody);
+      });
+    } else {
+      setState(() {
+        finaluser = int.parse("No records found");
+      });
+    }
+  }
+
+  Future<void> fetchCOLISData() async {
+    final response = await http.post(
+      Uri.parse('http://20.20.1.245:82/api_store/count_livre.php'),
+      body: {'user_email': finalEmail},
+    );
+
+    if (response.statusCode == 200) {
+      final userData = json.decode(response.body);
+      if (userData.isNotEmpty) {
+        final user = userData[0];
+        txtcolieLivrais.text=user['COUNT(etat_lv)'];
+      }
+    } else {
+      print('Failed to fetch user data');
+    }
+  }
+Future<void> fetchRetourData() async {
+  final response = await http.post(
+    Uri.parse('http://20.20.1.245:82/api_store/count_retour.php'),
+    body: {'user_email': finalEmail},
   );
 
+  if (response.statusCode == 200) {
+    final userData = json.decode(response.body);
+    if (userData.isNotEmpty) {
+      final user = userData[0];
+      txtretour.text=user['COUNT(etat_lv)'];
+    }
+  } else {
+    print('Failed to fetch user data');
+  }
+}
+Future<void> fetchReclamationData() async {
+  final response = await http.post(
+    Uri.parse('http://20.20.1.245:82/api_store/count_reclamation.php'),
+    body: {'user_email': finalEmail},
+  );
+
+  if (response.statusCode == 200) {
+    final userData = json.decode(response.body);
+    if (userData.isNotEmpty) {
+      final user = userData[0];
+      txtreclamation.text=user['count(contact_id)'];
+    }
+  } else {
+    print('Failed to fetch user data');
+  }
+}
+void _showAddOptionDialog(BuildContext context, int index) {
+  showDialog(
+    context: context,
+    builder: (context) {
+      return Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20.0),
+        ),
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.5,
+          constraints: BoxConstraints(
+            minWidth: 350,
+          ),
+          padding: EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+
+              Text(
+                'Détails Revenue net',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+              SizedBox(height: 20),
+              Text(
+                'Revenue net : 0 dh ',
+                style: TextStyle(fontSize: 18, color: Colors.black),
+              ),
+              SizedBox(height: 20),
+
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    onPressed: ()  {
+                      Navigator.pop(context);
+                    },
+                    child: Text(
+                      'Annuler',
+                      style: TextStyle(color: Colors.white, fontSize: 16),
+                    ),
+                  ),
+                  SizedBox(width: 10),
+
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       drawer: NavBar(),
       appBar: AppBar(
-        title: Text("Bienvenue sur LIVEX"),
-
+        title: Text('bienvenue sur livex'),
       ),
-      
       body: Container(
         child: Stack(
           children: [
@@ -103,8 +250,7 @@ class _MyHomePageState extends State<MyHomePage> {
             //3 photo
             Positioned(
               top: 170,
-              left:
-                  10, // Adjust the left position to place it next to the existing image
+              left: 10, // Adjust the left position to place it next to the existing image
               child: Container(
                 width: 178,
                 height: 180,
@@ -158,6 +304,8 @@ class _MyHomePageState extends State<MyHomePage> {
               width: 125,
               child: ElevatedButton(
                 onPressed: () {
+                  Navigator.pushReplacement(context, MaterialPageRoute(builder:(context)=>afficher_detaille_colislivrer()));
+
                   //button colie livrais
                   // Handle button click here
                 },
@@ -173,7 +321,7 @@ class _MyHomePageState extends State<MyHomePage> {
               left: 50,
               width: 125,
               child: ElevatedButton(
-                onPressed: () {
+                onPressed: () {Navigator.push(context, MaterialPageRoute(builder:(context)=>afficher_detaille_reclamation()));
                   //button RECLAMATION
                   // Handle button click here
                 },
@@ -191,6 +339,7 @@ class _MyHomePageState extends State<MyHomePage> {
               width: 125,
               child: ElevatedButton(
                 onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder:(context)=>afficher_detaille_retour()));
                   //button REtours
                   // Handle button click here
                 },
@@ -218,11 +367,21 @@ class _MyHomePageState extends State<MyHomePage> {
               //retour
               child: Padding(
                 padding: EdgeInsets.only(
-                    top: 205,
+                    top: 180,
                     left: 213), // Add padding to create space for TextField
                 child: Column(
                   children: [
-                    txtsimple("0", txtretour),
+                    TextField(
+                      enabled:
+                      false, // Assurez-vous que ce paramètre est à true
+                      readOnly: true,
+                      controller: txtretour,
+                      decoration: InputDecoration(
+                        labelStyle: TextStyle(color: Colors.black),
+                        labelText: '',
+                        border: InputBorder.none, // Remove the border (line)
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -231,10 +390,22 @@ class _MyHomePageState extends State<MyHomePage> {
               //RECLAMATION
               child: Padding(
                 padding: EdgeInsets.only(
-                    top: 205,
+                    top: 180,
                     left: 18.5), // Add padding to create space for TextField
                 child: Column(
-                  children: [txtsimple("0", txtreclamation)],
+                  children: [
+                    TextField(
+                      enabled:
+                      false, // Assurez-vous que ce paramètre est à true
+                      readOnly: true,
+                      controller: txtreclamation,
+                      decoration: InputDecoration(
+                        labelStyle: TextStyle(color: Colors.black),
+                        labelText: '',
+                        border: InputBorder.none, // Remove the border (line)
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -242,7 +413,7 @@ class _MyHomePageState extends State<MyHomePage> {
               child: Padding(
                 //COLIE LIVRAIS
                 padding: EdgeInsets.only(
-                    top: 25,
+                    top: 18,
                     left: 213), // Add padding to create space for TextField
                 child: Column(
                   children: [
@@ -253,7 +424,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       controller: txtcolieLivrais,
                       decoration: InputDecoration(
                         labelStyle: TextStyle(color: Colors.black),
-                        labelText: '0',
+                        labelText: '',
                         border: InputBorder.none, // Remove the border (line)
                       ),
                     ),
@@ -348,6 +519,7 @@ class _MyHomePageState extends State<MyHomePage> {
               width: 450,
               height: 200,
               child: GoogleMap(
+                mapType: MapType.hybrid,
                 initialCameraPosition: _intialPosition,
                 onMapCreated: (GoogleMapController controller) {
                   _controller.complete(controller);
